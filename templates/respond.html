@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Respond to Request</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-black shadow-sm glass-nav section-slide fixed-top">
+    <div class="container-fluid px-4">
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-sm me-3">← Back</a>
+            <span class="navbar-brand">Respond to Request #{{ request.id }}</span>
+        </div>
+        <div class="d-flex gap-2 align-items-center top-icon-menu">
+            <a href="{{ url_for('make_request') }}" class="btn btn-outline-light btn-sm">📩 Request</a>
+            <a href="{{ url_for('my_requests') }}" class="btn btn-outline-light btn-sm">📄 My Requests</a>
+            {% if session.is_admin %}<a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-sm">⚙️ Dashboard</a>{% endif %}
+            <a href="{{ url_for('profile') }}" class="btn btn-outline-light btn-sm">👤 Profile</a>
+            <button id="alertsBtn" class="btn btn-outline-light btn-sm position-relative">🔔 <span id="unreadCount" class="unread-badge d-none">0</span></button>
+            <button id="colorToggle" class="btn btn-outline-light btn-sm color-toggle">🎨</button>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm text-danger">Logout</a>
+        </div>
+    </div>
+</nav>
+<div class="container py-5">
+    <div class="glass-card mx-auto" style="max-width: 840px;">
+        <div class="mb-4">
+            <h4 class="mb-1">Request details</h4>
+            <p class="small-text mb-0">Review the student's request before sending your response.</p>
+        </div>
+        <div class="slider-shell request-respond-slider">
+            <div class="slider-track">
+                <div class="slide">
+                    <div class="card p-4 border-glow">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">{{ request.need }}</h5>
+                            <span class="status-chip pending">{{ request.status|capitalize }}</span>
+                        </div>
+                        <p class="small-text mb-3">{{ request.issue }}</p>
+                        <div class="mb-2"><strong>Name:</strong> {{ request.name }}</div>
+                        <div><strong>Email:</strong> {{ request.email }}</div>
+                    </div>
+                </div>
+                <div class="slide">
+                    <div class="card p-4 border-glow">
+                        <h5 class="mb-3">Respond to request</h5>
+                        <form method="POST" enctype="multipart/form-data">
+                            <div class="mb-4">
+                                <label class="form-label text-secondary">Your response</label>
+                                <textarea name="response" class="form-control" rows="9" placeholder="Type your response..." required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-secondary">Attach files/images to response</label>
+                                <input id="responseAttachmentsInput" type="file" name="response_attachments" class="form-control form-control-sm" multiple accept="image/*,text/*,.pdf,.doc,.docx">
+                                <div id="responseAttachmentsPreview" class="d-flex gap-2 flex-wrap mt-2"></div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light">Cancel</a>
+                                <button type="submit" class="btn btn-primary">Send Response</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="slider-controls">
+                <button type="button" class="btn btn-outline-light btn-sm" id="respondPrev">Details</button>
+                <span class="slide-counter"><span id="respondCurrent">1</span> / 2</span>
+                <button type="button" class="btn btn-outline-light btn-sm" id="respondNext">Respond</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const track = document.querySelector('.request-respond-slider .slider-track');
+    const slides = document.querySelectorAll('.request-respond-slider .slide');
+    const prevBtn = document.getElementById('respondPrev');
+    const nextBtn = document.getElementById('respondNext');
+    const current = document.getElementById('respondCurrent');
+    let index = 0;
+
+    if (!track || slides.length === 0) return;
+
+    const updateSlider = () => {
+        track.style.transform = `translateX(-${index * 100}%)`;
+        current.textContent = index + 1;
+    };
+
+    prevBtn.addEventListener('click', () => {
+        index = Math.max(0, index - 1);
+        updateSlider();
+    });
+
+    nextBtn.addEventListener('click', () => {
+        index = Math.min(slides.length - 1, index + 1);
+        updateSlider();
+    });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const input = document.getElementById('responseAttachmentsInput');
+    const out = document.getElementById('responseAttachmentsPreview');
+    input?.addEventListener('change', function(e){
+        out.innerHTML = '';
+        Array.from(e.target.files).forEach(file => {
+            const el = document.createElement('div'); el.className='file-preview p-2 bg-dark rounded';
+            if (file.type.startsWith('image/')){
+                const img = document.createElement('img'); img.style.width='80px'; img.style.height='80px'; img.style.objectFit='cover'; img.className='rounded';
+                img.src = URL.createObjectURL(file); el.appendChild(img);
+            } else { el.textContent = file.name; }
+            out.appendChild(el);
+        });
+    });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const unreadEl = document.getElementById('unreadCount');
+    const alertsBtn = document.getElementById('alertsBtn');
+    const colorToggle = document.getElementById('colorToggle');
+    function updateUnread(){ fetch('/alerts/unread_count').then(r=>r.json()).then(d=>{
+            if(d.unread>0){ unreadEl.textContent = d.unread; unreadEl.classList.remove('d-none'); }
+            else unreadEl.classList.add('d-none');
+    }).catch(()=>{}); }
+    updateUnread(); setInterval(updateUnread, 20000);
+    alertsBtn?.addEventListener('click', ()=> location.href = '/my-requests');
+    colorToggle?.addEventListener('click', ()=>{ document.body.classList.toggle('theme-alt'); localStorage.setItem('themeAlt', document.body.classList.contains('theme-alt')? '1':'0'); });
+    if(localStorage.getItem('themeAlt')==='1') document.body.classList.add('theme-alt');
+});
+</script>
+</body>
+</html>

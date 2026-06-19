@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-black shadow-sm glass-nav section-slide fixed-top">
+    <div class="container-fluid px-4">
+        <div>
+            <span class="navbar-brand fs-5">Admin Dashboard</span>
+            <div class="small-text">{{ now }}</div>
+        </div>
+            <div class="d-flex gap-2 align-items-center top-icon-menu">
+                <a href="{{ url_for('make_request') }}" class="btn btn-outline-light btn-sm">📩 Request</a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-sm">📊 Dashboard</a>
+                <a href="{{ url_for('admin_portal') }}" class="btn btn-outline-light btn-sm">🏠 Admin</a>
+                <a href="{{ url_for('profile') }}" class="btn btn-outline-light btn-sm">👤 Profile</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm text-danger">Logout</a>
+            </div>
+    </div>
+</nav>
+<div class="container py-5">
+    {% if pending > 0 %}
+    <div class="alert alert-warning rounded-4">🔔 {{ pending }} pending request(s)!</div>
+    {% endif %}
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="glass-card stat-card stat-total">
+                <h5>Total requests</h5>
+                <h2>{{ requests|length }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="glass-card stat-card stat-pending">
+                <h5>Pending</h5>
+                <h2>{{ pending }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="glass-card stat-card stat-responded">
+                <h5>Responded</h5>
+                <h2>{{ responded }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="glass-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-1">Request queue</h4>
+                <p class="small-text mb-0">Manage the latest submissions from students and respond quickly.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">Request</th>
+                        <th scope="col">Student</th>
+                        <th scope="col">Need</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>#{{ req.id }}</td>
+                        <td>
+                            <div class="fw-semibold">{{ req.name }}</div>
+                            <div class="small-text">{{ req.email }}</div>
+                        </td>
+                        <td>{{ req.need }}</td>
+                        <td>
+                            <span class="status-chip {% if req.status == 'pending' %}pending{% else %}responded{% endif %}">{{ req.status|capitalize }}</span>
+                        </td>
+                        <td>
+                            {% if req.status == 'pending' %}
+                            <a href="{{ url_for('respond', request_id=req.id) }}" class="btn btn-sm btn-primary">Respond</a>
+                            {% else %}
+                            <span class="small-text">Completed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

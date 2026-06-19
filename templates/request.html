@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Request</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-black shadow-sm glass-nav section-slide fixed-top">
+    <div class="container-fluid px-4">
+        <span class="navbar-brand">Request Center</span>
+        <div class="d-flex gap-2 align-items-center top-icon-menu">
+            <a href="{{ url_for('make_request') }}" class="btn btn-outline-light btn-sm">📩 Request</a>
+            <a href="{{ url_for('my_requests') }}" class="btn btn-outline-light btn-sm">📄 My Requests</a>
+            {% if session.is_admin %}<a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-sm">⚙️ Dashboard</a>{% endif %}
+            <a href="{{ url_for('profile') }}" class="btn btn-outline-light btn-sm">👤 Profile</a>
+            <button id="alertsBtn" class="btn btn-outline-light btn-sm position-relative">🔔 <span id="unreadCount" class="unread-badge d-none">0</span></button>
+            <button id="colorToggle" class="btn btn-outline-light btn-sm color-toggle">🎨</button>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm text-danger">Logout</a>
+        </div>
+    </div>
+</nav>
+<div class="container py-5">
+    <div class="glass-card mx-auto" style="max-width: 760px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-1">Create a new request</h4>
+                <p class="small-text mb-0">Provide details so the admin can respond quickly.</p>
+            </div>
+            <span class="status-chip pending">Draft</span>
+        </div>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label text-secondary">Name</label>
+                    <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-secondary">Email</label>
+                    <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-secondary">Need</label>
+                    <input type="text" name="need" class="form-control" placeholder="What do you need?" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-secondary">Issue</label>
+                    <textarea name="issue" class="form-control" rows="6" placeholder="Describe what you need help with" required></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-secondary">Attachments (files or images)</label>
+                    <input id="attachmentsInput" type="file" name="attachments" class="form-control form-control-sm" multiple accept="image/*,text/*,.pdf,.doc,.docx">
+                    <div id="attachmentsPreview" class="d-flex gap-2 flex-wrap mt-2"></div>
+                </div>
+            </div>
+            <div class="mt-4 text-end">
+                <button type="submit" class="btn btn-primary btn-lg">Send Request</button>
+            </div>
+        </form>
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('attachmentsInput')?.addEventListener('change', function(e){
+                const out = document.getElementById('attachmentsPreview');
+                out.innerHTML = '';
+                Array.from(e.target.files).forEach(file => {
+                    const el = document.createElement('div');
+                    el.className = 'file-preview p-2 bg-dark rounded';
+                    if (file.type.startsWith('image/')){
+                        const img = document.createElement('img');
+                        img.style.width = '80px'; img.style.height = '80px'; img.style.objectFit='cover'; img.className='rounded';
+                        img.src = URL.createObjectURL(file);
+                        el.appendChild(img);
+                    } else {
+                        el.textContent = file.name;
+                    }
+                    out.appendChild(el);
+                });
+            });
+        });
+        </script>
+    </div>
+</div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+        const unreadEl = document.getElementById('unreadCount');
+        const alertsBtn = document.getElementById('alertsBtn');
+        const colorToggle = document.getElementById('colorToggle');
+        function updateUnread(){ fetch('/alerts/unread_count').then(r=>r.json()).then(d=>{
+                if(d.unread>0){ unreadEl.textContent = d.unread; unreadEl.classList.remove('d-none'); }
+                else unreadEl.classList.add('d-none');
+        }).catch(()=>{}); }
+        updateUnread(); setInterval(updateUnread, 20000);
+        alertsBtn?.addEventListener('click', ()=> location.href = '/my-requests');
+        colorToggle?.addEventListener('click', ()=>{ document.body.classList.toggle('theme-alt'); localStorage.setItem('themeAlt', document.body.classList.contains('theme-alt')? '1':'0'); });
+        if(localStorage.getItem('themeAlt')==='1') document.body.classList.add('theme-alt');
+    });
+    </script>
+</body>
+</html>
